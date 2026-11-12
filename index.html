@@ -587,6 +587,24 @@
     padding: 16px;
   }
 
+  /* Поиск в редакторе вопросов */
+  #ed-search {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #ed-search:focus { border-color: var(--red); }
+  #ed-search::placeholder { color: var(--text-muted); }
+
   /* ===================== ИГРОВОЙ ЭКРАН ===================== */
   #game-screen {
     display: none;
@@ -1533,10 +1551,6 @@
         <input type="checkbox" id="set-bonus" />
       </div>
       <div class="settings-row">
-        <span>Режим «наоборот»</span>
-        <input type="checkbox" id="set-reverse" />
-      </div>
-      <div class="settings-row">
         <span>Звуки</span>
         <input type="checkbox" id="set-sound" checked />
       </div>
@@ -1564,7 +1578,7 @@
   </div>
 
   <aside class="side-panel">
-       <h3 class="side-title">Топ игроков</h3>
+       <h3 class="side-title" id="top-title">📅 Топ недели</h3>
 
     <div class="top-list" id="top-players"></div>
     <button class="outline-btn" id="reset-top">Сбросить результаты</button>
@@ -1640,6 +1654,8 @@
   <div class="editor-card">
     <div class="editor-title">📝 Редактор вопросов</div>
     <div class="editor-sub">Набор: <b id="editor-game-name">Resolver</b> · <span id="editor-count">0</span> карточек</div>
+
+    <input type="text" id="ed-search" placeholder="🔍 Поиск по термину или описанию…" maxlength="80" />
 
     <div class="editor-form">
       <input type="text" id="ed-en" placeholder="Термин" maxlength="80" />
@@ -1777,7 +1793,7 @@
 
   // Кэш данных (заполняется при старте из облака или из localStorage)
   const QUESTIONS_CACHE = { resolver: null, outsource: null };
-  let TOP_CACHE = [];
+  let TOP_CACHE = { resolver: [], outsource: [] }; // топ недели по каждой игре
   let GAMES_PLAYED = 0;
   let PROFILES_CACHE = {};
 
@@ -1826,9 +1842,8 @@
     QUESTIONS_CACHE.resolver = qs.filter(q => q.game === 'resolver').map(stripRow);
     QUESTIONS_CACHE.outsource = qs.filter(q => q.game === 'outsource').map(stripRow);
 
-    // Топ игроков
-    const { data: top } = await sb.from('top_players').select('name,score').order('score', { ascending: false }).limit(10);
-    TOP_CACHE = top || [];
+    // Топ игроков за неделю
+    await refreshTop();
 
     // Счётчик игр
     const { data: st } = await sb.from('stats').select('games_played').eq('id', 1).maybeSingle();
@@ -1921,15 +1936,43 @@
   }
 
   // ===================== ОБЛАЧНЫЕ ОПЕРАЦИИ: ТОП / СТАТИСТИКА / ПРОФИЛИ =====================
+
+  // Начало текущей недели — понедельник 00:00 по местному времени
+  function getWeekStart() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  }
+
+  // Лучший результат каждого игрока за список записей
+  function bestScores(rows) {
+    const best = {};
+    rows.forEach(r => {
+      if (!best[r.name] || r.score > best[r.name]) best[r.name] = r.score;
+    });
+    return Object.entries(best)
+      .map(([name, score]) => ({ name, score }))
+      .sort((a, b) => b.score - a.score);
+  }
+
   async function refreshTop() {
     if (!sb) return;
-    const { data } = await sb.from('top_players').select('name,score').order('score', { ascending: false }).limit(10);
-    TOP_CACHE = data || [];
+    const { data } = await sb.from('top_players')
+      .select('name,score,game,created_at')
+      .gte('created_at', getWeekStart().toISOString())
+      .order('score', { ascending: false })
+      .limit(500);
+    const rows = data || [];
+    TOP_CACHE = {
+      resolver: bestScores(rows.filter(r => r.game === 'resolver')).slice(0, 10),
+      outsource: bestScores(rows.filter(r => r.game === 'outsource')).slice(0, 10)
+    };
     renderTop();
   }
 
   async function cloudAddTop(playersArr) {
-    const rows = playersArr.map(p => ({ name: p.name, score: p.score }));
+    const rows = playersArr.map(p => ({ name: p.name, score: p.score, game: currentGame }));
     const { error } = await sb.from('top_players').insert(rows);
     if (error) throw error;
     await refreshTop();
@@ -1991,7 +2034,7 @@
   }
 
   // ===================== НАСТРОЙКИ =====================
-  const DEFAULT_SETTINGS = { timer: 60, penalty: false, bonus: false, reverse: false, sound: true };
+  const DEFAULT_SETTINGS = { timer: 60, penalty: false, bonus: false, sound: true };
 
   function getSettings() {
     try { return { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem('ya_kart_settings')) || {}) }; }
@@ -2004,19 +2047,16 @@
   const setTimerEl = document.getElementById('set-timer');
   const setPenaltyEl = document.getElementById('set-penalty');
   const setBonusEl = document.getElementById('set-bonus');
-  const setReverseEl = document.getElementById('set-reverse');
   const setSoundEl = document.getElementById('set-sound');
 
   setTimerEl.value = String(settings.timer);
   setPenaltyEl.checked = settings.penalty;
   setBonusEl.checked = settings.bonus;
-  setReverseEl.checked = settings.reverse;
   setSoundEl.checked = settings.sound;
 
   setTimerEl.addEventListener('change', () => { settings.timer = parseInt(setTimerEl.value, 10); saveSettings(); });
   setPenaltyEl.addEventListener('change', () => { settings.penalty = setPenaltyEl.checked; saveSettings(); });
   setBonusEl.addEventListener('change', () => { settings.bonus = setBonusEl.checked; saveSettings(); });
-  setReverseEl.addEventListener('change', () => { settings.reverse = setReverseEl.checked; saveSettings(); });
   setSoundEl.addEventListener('change', () => { settings.sound = setSoundEl.checked; saveSettings(); });
 
   // ===================== ЗВУКИ (WebAudio, без файлов) =====================
@@ -2141,22 +2181,32 @@
   }
   function saveStats(s) { localStorage.setItem('ya_kart_stats', JSON.stringify(s)); }
 
-  function getTop() {
-    try { return JSON.parse(localStorage.getItem('ya_kart_top')) || []; }
-    catch { return []; }
+  // Топ недели (локальный режим): отсекаем записи старше понедельника, по конкретной игре
+  function getTopWeek(game) {
+    try {
+      const arr = JSON.parse(localStorage.getItem('ya_kart_top_week')) || [];
+      return arr.filter(e =>
+        (e.ts || 0) >= getWeekStart().getTime() &&
+        (e.game || 'resolver') === game);
+    } catch { return []; }
   }
-  function saveTop(t) { localStorage.setItem('ya_kart_top', JSON.stringify(t)); }
 
   function renderStats() {
     document.getElementById('games-played').textContent = GAMES_PLAYED;
   }
 
   function renderTop() {
-    const t = TOP_CACHE;
+    // Заголовок показывает, топ какой игры сейчас на экране
+    const titleEl = document.getElementById('top-title');
+    if (titleEl) {
+      titleEl.textContent = '📅 Топ недели · ' +
+        (currentGame === 'resolver' ? 'Resolver' : 'Outsource-Resolver');
+    }
+    const t = TOP_CACHE[currentGame] || [];
     const profiles = getProfiles();
     const wrap = document.getElementById('top-players');
     if (t.length === 0) {
-      wrap.innerHTML = '<div class="empty-hint">Пока нет результатов</div>';
+      wrap.innerHTML = '<div class="empty-hint">На этой неделе в эту игру<br>ещё никто не играл — будьте первым! 🚀</div>';
       return;
     }
     const medals = ['🥇', '🥈', '🥉'];
@@ -2194,6 +2244,7 @@
       selectScreen.style.display = 'none';
       startScreen.style.display = 'flex';
       backToSelectBtn.style.display = '';
+      renderTop(); // показать топ выбранной игры
     });
   });
 
@@ -2235,11 +2286,10 @@
   addPlayerBtn.addEventListener('click', addNameInput);
   addNameInput();
 
-  // ===================== ТЕКСТ КАРТОЧКИ (прямой/обратный режим) =====================
+  // ===================== ТЕКСТ КАРТОЧКИ =====================
   // front — то, что видно сразу (термин).
   // back — ответ, который открывается кнопкой «Показать описание».
   function cardFaceText(item) {
-    if (settings.reverse) return { front: item.desc || item.en, back: item.en };
     return { front: item.en, back: item.desc || item.ru };
   }
 
@@ -2283,10 +2333,9 @@
         const row = Math.floor(pos / currentCols);
         document.getElementById('modal-coord').textContent = `${RU_LETTERS[col]}-${row + 1}`;
 
-        // Модалка БЕЗ переворота: сразу виден только вопрос (термин,
-        // в режиме «наоборот» — описание). Ответ скрыт и открывается
-        // только по кнопке «Показать описание».
-        const answerLabel = settings.reverse ? '👁 Показать термин' : '👁 Показать описание';
+        // Модалка БЕЗ переворота: сразу виден только термин.
+        // Ответ скрыт и открывается только по кнопке «Показать описание».
+        const answerLabel = '👁 Показать описание';
         modalFront.innerHTML = `
           <div class="modal-question">${escapeHtml(face.front)}</div>
           <div class="description" id="modal-desc">${escapeHtml(face.back)}</div>
@@ -2644,11 +2693,12 @@
     if (sb) {
       cloudAddTop(players);
     } else {
-      const top = getTop();
-      players.forEach(p => top.push({ name: p.name, score: p.score }));
-      top.sort((a, b) => b.score - a.score);
-      saveTop(top.slice(0, 10));
-      TOP_CACHE = getTop();
+      // Топ недели (список с меткой времени и игрой)
+      const week = JSON.parse(localStorage.getItem('ya_kart_top_week') || '[]');
+      players.forEach(p => week.push({ name: p.name, score: p.score, ts: Date.now(), game: currentGame }));
+      week.sort((a, b) => b.score - a.score);
+      localStorage.setItem('ya_kart_top_week', JSON.stringify(week.slice(0, 20)));
+      TOP_CACHE = { resolver: getTopWeek('resolver'), outsource: getTopWeek('outsource') };
     }
 
     // Определяем победителя (или ничью)
@@ -2756,13 +2806,16 @@
     }
   });
   document.getElementById('reset-top').addEventListener('click', async () => {
-    if (confirm('Сбросить топ игроков?')) {
+    const gameName = currentGame === 'resolver' ? 'Resolver' : 'Outsource-Resolver';
+    if (confirm(`Сбросить топ игроков (${gameName})?`)) {
       if (sb) {
-        await sb.from('top_players').delete().neq('id', 0);
-        TOP_CACHE = [];
+        await sb.from('top_players').delete().eq('game', currentGame);
+        TOP_CACHE[currentGame] = [];
       } else {
-        saveTop([]);
-        TOP_CACHE = [];
+        const week = JSON.parse(localStorage.getItem('ya_kart_top_week') || '[]');
+        localStorage.setItem('ya_kart_top_week',
+          JSON.stringify(week.filter(e => (e.game || 'resolver') !== currentGame)));
+        TOP_CACHE[currentGame] = [];
       }
       renderTop();
     }
@@ -2822,8 +2875,11 @@
   const edEn = document.getElementById('ed-en');
   const edDesc = document.getElementById('ed-desc');
   const edAdd = document.getElementById('ed-add');
+  const edSearch = document.getElementById('ed-search');
   let editingIndex = -1;
   let editorQuestions = [];
+
+  edSearch.addEventListener('input', renderEditor);
 
   function renderEditor() {
     document.getElementById('editor-game-name').textContent =
@@ -2833,8 +2889,21 @@
       editorList.innerHTML = '<div class="empty-hint">Список пуст — добавьте первую карточку</div>';
       return;
     }
+    // Фильтр поиска: по термину и описанию, без учёта регистра
+    const query = (edSearch.value || '').trim().toLowerCase();
+    const visible = query
+      ? editorQuestions
+          .map((q, i) => ({ q, i }))
+          .filter(({ q }) =>
+            (q.en || '').toLowerCase().includes(query) ||
+            (q.desc || '').toLowerCase().includes(query))
+      : editorQuestions.map((q, i) => ({ q, i }));
+    if (!visible.length) {
+      editorList.innerHTML = `<div class="empty-hint">Ничего не найдено по запросу «${escapeHtml(edSearch.value.trim())}»</div>`;
+      return;
+    }
     editorList.innerHTML = '';
-    editorQuestions.forEach((q, i) => {
+    visible.forEach(({ q, i }) => {
       const row = document.createElement('div');
       row.className = 'editor-row';
       row.innerHTML = `
@@ -2911,7 +2980,7 @@
   document.getElementById('open-editor').addEventListener('click', () => {
     editorQuestions = getQuestionSet(currentGame);
     editingIndex = -1;
-    edEn.value = ''; edDesc.value = '';
+    edEn.value = ''; edDesc.value = ''; edSearch.value = '';
     edAdd.textContent = 'Добавить';
     renderEditor();
     editorOverlay.classList.add('active');
@@ -3016,14 +3085,14 @@
       syncStatusEl.textContent = 'офлайн (локально)';
       syncStatusEl.style.color = 'var(--text-muted)';
       GAMES_PLAYED = getStats().gamesPlayed;
-      TOP_CACHE = getTop();
+      TOP_CACHE = { resolver: getTopWeek('resolver'), outsource: getTopWeek('outsource') };
       PROFILES_CACHE = getProfilesLocal();
     }
   } else {
     syncStatusEl.textContent = 'локально';
     syncStatusEl.style.color = 'var(--text-muted)';
     GAMES_PLAYED = getStats().gamesPlayed;
-    TOP_CACHE = getTop();
+    TOP_CACHE = { resolver: getTopWeek('resolver'), outsource: getTopWeek('outsource') };
     PROFILES_CACHE = getProfilesLocal();
   }
 
