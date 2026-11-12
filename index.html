@@ -1,0 +1,3086 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Я Карточки</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --border: #ececec;
+    --border-strong: #d8d8d8;
+    --text: #0f0f0f;
+    --text-secondary: #565656;
+    --text-muted: #9a9a9a;
+    --red: #ee3322;
+    --red-dark: #cc2418;
+    --red-soft: #fde8e5;
+    --black: #0a0a0a;
+    --green: #2e7d32;
+    --green-soft: #e8f5e9;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.07);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.10);
+    --radius-lg: 20px;
+    --radius: 14px;
+    --radius-sm: 10px;
+  }
+   body.dark-theme {
+    --bg: #1a1a1a;
+    --panel: #2d2d2d;
+    --border: #3d3d3d;
+    --border-strong: #4d4d4d;
+    --text: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666666;
+    --red-soft: #3d1f1c;
+    --green-soft: #1c3d1f;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.4);
+  }
+
+  body.dark-theme .stat-row,
+  body.dark-theme .top-item,
+  body.dark-theme .game-select-btn,
+  body.dark-theme .name-input,
+  body.dark-theme .finish-rating-item,
+  body.dark-theme .editor-row,
+  body.dark-theme .editor-form input,
+  body.dark-theme .settings-row select {
+    background: #232323;
+    color: var(--text);
+  }
+  body.dark-theme .name-input:focus { background: #232323; }
+  body.dark-theme .remove-player { background: #383838; }
+  body.dark-theme .modal-show,
+  body.dark-theme .modal-wrong,
+  body.dark-theme .close-btn,
+  body.dark-theme .menu-btn:hover,
+  body.dark-theme .editor-mini-btn {
+    background: #383838;
+    color: var(--text);
+  }
+  body.dark-theme .modal-show:hover,
+  body.dark-theme .modal-wrong:hover,
+  body.dark-theme .close-btn:hover,
+  body.dark-theme .editor-mini-btn:hover { background: #454545; }
+  body.dark-theme .grid-label.row-number { color: #f0f0f0; }
+  body.dark-theme .progress-bar { background: #3d3d3d; }
+
+  .theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    width: 44px;
+    height: 44px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    box-shadow: var(--shadow-sm);
+  }
+  .theme-toggle:hover {
+    transform: scale(1.1);
+    border-color: var(--red);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(238,51,34,0.06), transparent 35%),
+      radial-gradient(circle at 92% 88%, rgba(238,51,34,0.05), transparent 35%),
+      radial-gradient(circle at 85% 8%, rgba(238,51,34,0.03), transparent 30%),
+      radial-gradient(circle at 15% 90%, rgba(238,51,34,0.03), transparent 30%),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 24px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+   /* ===================== ЭКРАН ВЫБОРА ИГРЫ ===================== */
+  #select-screen {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+  }
+  .select-card {
+    max-width: 520px;
+    padding: 48px 52px;
+  }
+  .select-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  .select-brand-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: #fff;
+    border-radius: 14px;
+    width: 56px;
+    height: 56px;
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    padding-bottom: 3px;
+    flex-shrink: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    box-shadow: 0 6px 20px rgba(238,51,34,0.25);
+  }
+  .select-brand-text {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+  .select-title {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .select-hint {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+  .game-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .game-select-btn {
+    padding: 22px 26px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .game-select-btn::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--red);
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
+  }
+  .game-select-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--panel);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .game-select-btn:hover::before {
+    transform: scaleY(1);
+  }
+  .game-select-name {
+    font-weight: 800;
+    font-size: 18px;
+    display: block;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .game-select-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .game-select-arrow {
+    font-size: 20px;
+    color: var(--text-muted);
+    transition: color 0.2s, transform 0.2s;
+    flex-shrink: 0;
+  }
+  .game-select-btn:hover .game-select-arrow {
+    color: var(--red);
+    transform: translateX(4px);
+  }
+  .select-footer {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ===================== КНОПКА "НАЗАД К ВЫБОРУ ИГРЫ" ===================== */
+  .back-button {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    z-index: 5;
+    padding: 12px 20px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--text-secondary);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+
+  .back-button:hover {
+    border-color: var(--red);
+    color: var(--red);
+    transform: translateX(-3px);
+  }
+
+  body.dark-theme .back-button {
+    background: #232323;
+    border-color: #4d4d4d;
+  }
+
+  /* ===================== СТАРТОВЫЙ ЭКРАН ===================== */
+  #start-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .side-panel {
+    background: var(--panel);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 24px;
+    width: 260px;
+    flex-shrink: 0;
+  }
+
+  .side-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    margin-bottom: 14px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .stat-row .stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--red);
+  }
+
+  .outline-btn {
+    width: 100%;
+    padding: 11px 16px;
+    background: transparent;
+    border: 1.5px solid var(--red);
+    color: var(--red);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+  }
+
+  .outline-btn:hover {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .outline-btn.small { padding: 8px 12px; font-size: 13px; margin-bottom: 8px; }
+
+  .settings-block { border-top: 1.5px solid var(--border); padding-top: 16px; margin-top: 16px; }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .settings-row select {
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .settings-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--red);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .main-card {
+    background: var(--panel);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 40px 44px;
+    width: 100%;
+    max-width: 520px;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+
+  .ya-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: #fff;
+    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    padding-bottom: 3px;
+    flex-shrink: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    box-shadow: 0 6px 20px rgba(238,51,34,0.25);
+  }
+
+  .brand-text {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .setup-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .setup-hint {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 26px;
+    line-height: 1.5;
+  }
+
+  .field-label {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  #name-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .name-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .name-input {
+    flex: 1;
+    padding: 13px 16px;
+    font-size: 15px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fafafa;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    font-family: inherit;
+    min-width: 0;
+  }
+
+  .name-input:focus {
+    border-color: var(--red);
+    background: #fff;
+  }
+
+  .name-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .remove-player {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    background: #f2f2f2;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+
+  .remove-player:hover {
+    background: var(--red-soft);
+    color: var(--red);
+  }
+
+  .add-player-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--red);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 22px;
+    font-family: inherit;
+  }
+
+  .add-player-btn:hover {
+    border-color: var(--red);
+    background: var(--red-soft);
+  }
+
+  .primary-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    box-shadow: 0 6px 20px rgba(238,51,34,0.25);
+  }
+
+  .primary-btn:hover {
+    background: var(--red-dark);
+    box-shadow: 0 8px 26px rgba(238,51,34,0.35);
+  }
+
+  .primary-btn:active {
+    transform: scale(0.99);
+  }
+
+  .primary-btn:disabled {
+    background: #d5d5d5;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  .top-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .top-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+  }
+
+  .top-item .top-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .top-item .top-score {
+    font-weight: 800;
+    color: var(--red);
+    white-space: nowrap;
+  }
+
+  .top-item .top-acc {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  .empty-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 16px;
+  }
+
+  /* ===================== ИГРОВОЙ ЭКРАН ===================== */
+  #game-screen {
+    display: none;
+  }
+
+  body.game-active {
+    overflow: hidden;
+    padding: 16px 20px;
+  }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    gap: 12px;
+  }
+
+  .ya-badge-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: #fff;
+    border-radius: 9px;
+    width: 40px;
+    height: 40px;
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1;
+    padding-bottom: 2px;
+    font-family: Arial, sans-serif;
+  }
+
+  .game-title-text {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    text-transform: uppercase;
+  }
+
+  .game-mode-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--red-soft);
+    color: var(--red);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+
+  .turn-banner {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+  .turn-banner b {
+    color: var(--red);
+    font-weight: 900;
+  }
+
+  .score-chips {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .score-chip {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .score-chip .chip-score {
+    color: var(--red);
+    font-weight: 800;
+  }
+
+  .score-chip .chip-streak {
+    color: #f57c00;
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  .score-chip.active {
+    border-color: var(--red);
+    background: var(--red-soft);
+    box-shadow: 0 4px 14px rgba(238,51,34,0.15);
+  }
+
+  .controls {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .shuffle-btn {
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    background: var(--black);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+  }
+
+  .menu-btn {
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    margin-left: 10px;
+  }
+
+  .menu-btn:hover {
+    background: #f0f0f0;
+    border-color: var(--text-secondary);
+    color: var(--text);
+  }
+
+  .menu-btn:active {
+    transform: scale(0.98);
+  }
+
+  .shuffle-btn:hover { opacity: 0.85; }
+  .shuffle-btn:active { transform: scale(0.98); }
+  .shuffle-btn:disabled {
+    background: #c5c5c5;
+    cursor: not-allowed;
+  }
+
+  .grid-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    height: calc(100vh - 240px);
+    min-height: 400px;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    grid-template-rows: 28px 1fr;
+    gap: 4px;
+  }
+
+  .grid-corner {
+    /* пустая клетка в углу */
+  }
+
+  .col-labels {
+    display: grid;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .row-labels {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .grid-label {
+    font-size: 18px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  .grid-label.col-letter {
+    color: var(--red);
+  }
+
+  .grid-label.row-number {
+    color: #0f0f0f;
+  }
+
+  #game-container {
+    display: grid;
+    gap: 8px;
+    height: 100%;
+  }
+
+  .card {
+    perspective: 1000px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.05s ease-out;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    transform-style: preserve-3d;
+  }
+
+  .card.flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(11px, 1vw, 15px);
+    line-height: 1.2;
+    font-weight: 700;
+    user-select: none;
+    padding: 8px;
+    text-align: center;
+    word-break: break-word;
+    overflow: hidden;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+
+  .front {
+    background: var(--panel);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card:not(.flipped):not(.answered):hover .front {
+    border-color: var(--red);
+    box-shadow: 0 4px 14px rgba(238,51,34,0.15);
+  }
+
+  .back {
+    background: var(--red);
+    color: #fff;
+    transform: rotateY(180deg);
+    border: 1.5px solid var(--red);
+  }
+
+  .card.answered { cursor: default; }
+
+  .card.answered .front {
+    background: var(--green-soft);
+    color: var(--green);
+    border-color: #a5d6a7;
+  }
+
+  .card.answered .back {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .card.answered::after {
+    content: "✓";
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 24px;
+    height: 24px;
+    background: var(--green);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 14px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    z-index: 10;
+  }
+
+  /* ===================== МОДАЛКА ===================== */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 15, 15, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  #modal-overlay.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-card {
+    width: 520px;
+    max-width: 100%;
+    height: 440px;
+    perspective: 1200px;
+    position: relative;
+  }
+
+  .modal-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  }
+
+  .modal-card.flipped .modal-card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .modal-face {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-front {
+    background: var(--panel);
+    border: 2px solid var(--red);
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.2;
+    overflow-y: auto;
+  }
+
+  /* Крупный текст вопроса (термин) на лицевой стороне */
+  .modal-question {
+    font-size: clamp(18px, 2.6vw, 30px);
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .modal-back {
+    background: var(--panel);
+    border: 2px solid var(--red);
+    transform: rotateY(180deg);
+    overflow-y: auto;
+    justify-content: center;
+    color: var(--text);
+  }
+
+  .modal-word {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--red);
+    margin-bottom: 8px;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+
+  .modal-face .description {
+    font-size: 15px;
+    margin-top: 14px;
+    line-height: 1.55;
+    max-width: 420px;
+    text-align: center;
+    color: var(--text-secondary);
+    display: none;
+    font-weight: 600;
+  }
+
+  .modal-face .description.visible {
+    display: block;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .modal-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    letter-spacing: 0.2px;
+  }
+
+  .modal-show { background: #f0f0f0; color: var(--text); }
+  .modal-show:hover { background: #e2e2e2; }
+  .modal-show:disabled { opacity: 0.5; cursor: default; }
+
+  .modal-wrong { background: #f0f0f0; color: var(--text); }
+  .modal-wrong:hover { background: #e2e2e2; }
+
+  .modal-right {
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(238,51,34,0.25);
+  }
+  .modal-right:hover { background: var(--red-dark); }
+
+  .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    background: #f0f0f0;
+    color: var(--text);
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    font-family: inherit;
+    line-height: 1;
+  }
+
+  .close-btn:hover { background: #e2e2e2; }
+
+  .modal-coord {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    background: var(--black);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 8px;
+    letter-spacing: 1px;
+  }
+
+  .progress-wrap {
+    max-width: 1400px;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 4px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #ececec;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--red);
+    border-radius: 4px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .progress-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  .score-pop {
+    position: fixed;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--red);
+    pointer-events: none;
+    z-index: 2000;
+    animation: scorePop 1s ease forwards;
+    transform: translate(-50%, 0);
+    text-shadow: 0 2px 8px rgba(255,255,255,0.8);
+  }
+  .score-pop.negative { color: #b71c1c; }
+  @keyframes scorePop {
+    0%   { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+    30%  { opacity: 1; transform: translate(-50%, -12px) scale(1.25); }
+    100% { opacity: 0; transform: translate(-50%, -60px) scale(1); }
+  }
+
+  /* ===================== ЭКРАН ПОБЕДИТЕЛЯ ===================== */
+  #finish-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(238,51,34,0.10), transparent 55%),
+      var(--bg);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  #finish-screen.active { display: flex; }
+
+  .finish-card {
+    background: var(--panel);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 44px 48px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    animation: finishIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  }
+
+  @keyframes finishIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .finish-emoji {
+    font-size: 72px;
+    line-height: 1;
+    margin-bottom: 12px;
+    animation: trophyBounce 1s ease infinite alternate;
+  }
+
+  @keyframes trophyBounce {
+    from { transform: translateY(0) rotate(-4deg); }
+    to { transform: translateY(-8px) rotate(4deg); }
+  }
+
+  .finish-title {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    margin-bottom: 22px;
+    color: var(--text);
+  }
+
+  .finish-subtitle {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .finish-winner {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--red);
+    margin-bottom: 14px;
+    word-break: break-word;
+    line-height: 1.1;
+  }
+
+  .finish-score {
+    font-size: 56px;
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .finish-score-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 6px;
+    margin-bottom: 28px;
+  }
+
+  .finish-rating {
+    border-top: 1.5px solid var(--border);
+    padding-top: 20px;
+    margin-bottom: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .finish-rating-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+
+  .finish-rating-item.is-winner {
+    background: var(--red-soft);
+    border: 1.5px solid var(--red);
+  }
+
+  .finish-rating-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .finish-rating-place {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--border-strong);
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .finish-rating-item.is-winner .finish-rating-place {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .finish-rating-score {
+    font-weight: 800;
+    color: var(--red);
+  }
+
+  .finish-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .finish-actions .primary-btn,
+  .finish-actions .outline-btn {
+    flex: 1;
+    margin: 0;
+    min-width: 140px;
+  }
+
+  #finish-review { display: none; }
+
+  .modal-timer {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--red);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-size: 18px;
+    font-weight: 800;
+    z-index: 1001;
+    box-shadow: 0 6px 20px rgba(238,51,34,0.4);
+    letter-spacing: 0.5px;
+    transition: background 0.3s, transform 0.2s;
+  }
+  .modal-timer.warning {
+    background: #b71c1c;
+    animation: timerPulse 0.8s infinite;
+  }
+  @keyframes timerPulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50%      { transform: translateX(-50%) scale(1.1); }
+  }
+
+  /* ===================== РЕДАКТОР ВОПРОСОВ ===================== */
+  #editor-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 15, 15, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  #editor-overlay.active { display: flex; }
+
+  .editor-card {
+    background: var(--panel);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 28px 32px;
+    width: 640px;
+    max-width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .editor-title {
+    font-size: 20px;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+  .editor-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .editor-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .editor-form input {
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    min-width: 0;
+  }
+  .editor-form input:focus { border-color: var(--red); }
+  #ed-en { flex: 1; }
+  #ed-desc { flex: 2; }
+  .editor-form .primary-btn { width: auto; padding: 10px 18px; font-size: 14px; }
+
+  #editor-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    min-height: 200px;
+  }
+
+  .editor-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .editor-row .er-term { font-weight: 800; color: var(--text); flex-shrink: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .editor-row .er-desc { color: var(--text-secondary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .editor-mini-btn {
+    border: none;
+    background: #f0f0f0;
+    color: var(--text);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .editor-mini-btn:hover { background: #e2e2e2; }
+  .editor-mini-btn.danger:hover { background: var(--red-soft); color: var(--red); }
+
+  .editor-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .editor-actions .outline-btn,
+  .editor-actions .primary-btn { width: auto; flex: 1; min-width: 130px; margin: 0; padding: 11px 12px; font-size: 13px; }
+
+  /* ===================== ТОСТЫ ДОСТИЖЕНИЙ ===================== */
+  #toast-wrap {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .ach-toast {
+    background: var(--black);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-lg);
+    animation: toastIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+    max-width: 320px;
+  }
+  .ach-toast .ach-icon { font-size: 28px; }
+  .ach-toast .ach-name { font-weight: 800; font-size: 14px; }
+  .ach-toast .ach-desc { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+  @keyframes toastIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .ach-toast.out { transition: opacity 0.4s, transform 0.4s; opacity: 0; transform: translateX(120%); }
+
+  /* ===================== АДАПТИВ ===================== */
+  @media (max-width: 1000px) {
+    #start-screen { flex-direction: column; }
+    #select-screen { flex-direction: column; }
+    .side-panel { width: 100%; max-width: 520px; }
+  }
+
+  @media (max-width: 900px) {
+    .grid-wrap { height: auto; min-height: 70vh; }
+    body.game-active { overflow: auto; }
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 16px; }
+    .main-card { padding: 28px 22px; }
+    .brand-text { font-size: 24px; }
+    .ya-badge { width: 46px; height: 46px; font-size: 28px; border-radius: 10px; }
+    .setup-title { font-size: 18px; }
+    .game-title-text { font-size: 18px; }
+    .face { font-size: clamp(10px, 2.4vw, 13px); padding: 5px; }
+    .score-chip { padding: 8px 12px; font-size: 12px; }
+    .modal-card { height: 460px; }
+    .modal-front { font-size: 26px; }
+    .modal-word { font-size: 22px; }
+    .editor-card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+  <button class="theme-toggle" id="theme-toggle" title="Переключить тему">🌙</button>
+
+<!-- ===================== ЭКРАН ВЫБОРА ИГРЫ ===================== -->
+<div id="select-screen">
+  <div class="main-card select-card">
+    <div class="select-brand">
+      <span class="select-brand-badge">Я</span>
+      <span class="select-brand-text">Карточки</span>
+    </div>
+    <h2 class="select-title">Выберите игру</h2>
+    <p class="select-hint">Вопросы какой категории будем повторять?</p>
+    <div class="game-select-list">
+      <button class="game-select-btn" data-game="resolver">
+        <span>
+          <span class="game-select-name">Resolver</span>
+          <span class="game-select-desc">Вопросы по работе резолвера RCC</span>
+        </span>
+        <span class="game-select-arrow">→</span>
+      </button>
+      <button class="game-select-btn" data-game="outsource">
+        <span>
+          <span class="game-select-name">Outsource-Resolver</span>
+          <span class="game-select-desc">Вопросы по аутсорс-резолверу</span>
+        </span>
+        <span class="game-select-arrow">→</span>
+      </button>
+    </div>
+    <p class="select-footer">Я Карточки · тренажёр терминов</p>
+  </div>
+</div>
+
+<!-- ===================== СТАРТОВЫЙ ЭКРАН ===================== -->
+<div id="start-screen">
+    <button class="back-button" id="back-to-select">← К выбору игры</button>
+  <aside class="side-panel">
+      <h3 class="side-title">Статистика</h3>
+
+    <div class="stat-row">
+      <span>Сыграно игр</span>
+      <span class="stat-value" id="games-played">0</span>
+    </div>
+    <button class="outline-btn small" id="reset-stats">Сбросить счётчик</button>
+
+    <div class="settings-block">
+      <h3 class="side-title">⚙️ Настройки</h3>
+      <div class="settings-row">
+        <span>Таймер хода</span>
+        <select id="set-timer">
+          <option value="30">30 сек</option>
+          <option value="60" selected>60 сек</option>
+          <option value="90">90 сек</option>
+          <option value="0">выкл</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span>Штраф за ошибку (−50)</span>
+        <input type="checkbox" id="set-penalty" />
+      </div>
+      <div class="settings-row">
+        <span>Бонус за скорость (+50)</span>
+        <input type="checkbox" id="set-bonus" />
+      </div>
+      <div class="settings-row">
+        <span>Режим «наоборот»</span>
+        <input type="checkbox" id="set-reverse" />
+      </div>
+      <div class="settings-row">
+        <span>Звуки</span>
+        <input type="checkbox" id="set-sound" checked />
+      </div>
+      <button class="outline-btn small" id="open-editor">📝 Редактор вопросов</button>
+      <div class="stat-row" style="margin-top:14px; margin-bottom:0;">
+        <span>☁️ Облако</span>
+        <span class="stat-value" id="sync-status">…</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-card">
+    <div class="brand">
+      <span class="ya-badge">Я</span>
+      <span class="brand-text">Карточки</span>
+    </div>
+
+    <h2 class="setup-title">Настройка игры</h2>
+    <p class="setup-hint">Добавьте игроков и начните игру. Каждая угаданная карточка — 100 баллов.</p>
+
+    <label class="field-label">Игроки</label>
+    <div id="name-inputs"></div>
+    <button class="add-player-btn" id="add-player">+ Добавить игрока</button>
+    <button class="primary-btn" id="start-btn">Начать игру</button>
+  </div>
+
+  <aside class="side-panel">
+       <h3 class="side-title">Топ игроков</h3>
+
+    <div class="top-list" id="top-players"></div>
+    <button class="outline-btn" id="reset-top">Сбросить результаты</button>
+  </aside>
+</div>
+
+<!-- ===================== ИГРОВОЙ ЭКРАН ===================== -->
+<div id="game-screen">
+  <header class="game-header">
+    <span class="ya-badge-sm">Я</span>
+    <span class="game-title-text">Карточки</span>
+    <span class="game-mode-badge" id="game-mode-badge">Resolver</span>
+  </header>
+
+  <div class="turn-banner" id="turn-banner">Ходит: <b>—</b></div>
+
+  <div class="score-chips" id="score-chips"></div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <span class="progress-label" id="progress-label">0 / 0</span>
+  </div>
+
+  <div class="controls">
+    <button class="shuffle-btn" id="shuffleBtn">Перемешать</button>
+    <button class="menu-btn" id="menuBtn">← В главное меню</button>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="grid-corner"></div>
+    <div class="col-labels" id="col-labels"></div>
+    <div class="row-labels" id="row-labels"></div>
+    <div id="game-container"></div>
+  </div>
+
+</div>
+
+<!-- ===================== ЭКРАН ПОБЕДИТЕЛЯ ===================== -->
+<div id="finish-screen">
+  <div class="finish-card">
+    <div class="finish-emoji">🏆</div>
+    <h2 class="finish-title">Игра завершена!</h2>
+    <p class="finish-subtitle">Победитель</p>
+    <div class="finish-winner" id="finish-winner">—</div>
+    <div class="finish-score" id="finish-score">0</div>
+    <div class="finish-score-label">баллов</div>
+
+    <div class="finish-rating" id="finish-rating"></div>
+
+    <div class="finish-actions">
+      <button class="primary-btn" id="finish-review">🔁 Повторить ошибки</button>
+      <button class="primary-btn" id="finish-again">Играть снова</button>
+      <button class="outline-btn" id="finish-menu">В меню</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== МОДАЛКА ===================== -->
+<div id="modal-overlay">
+  <div class="modal-timer" id="modal-timer">⏱ 60</div>
+  <div class="modal-card" id="modal-card">
+    <span class="modal-coord" id="modal-coord">А-1</span>
+    <button class="close-btn" id="close-btn" title="Отмена (без штрафа, ход остаётся)">&times;</button>
+    <div class="modal-card-inner" id="modal-card-inner">
+      <div class="modal-face modal-front" id="modal-front"></div>
+      <div class="modal-face modal-back" id="modal-back"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== РЕДАКТОР ВОПРОСОВ ===================== -->
+<div id="editor-overlay">
+  <div class="editor-card">
+    <div class="editor-title">📝 Редактор вопросов</div>
+    <div class="editor-sub">Набор: <b id="editor-game-name">Resolver</b> · <span id="editor-count">0</span> карточек</div>
+
+    <div class="editor-form">
+      <input type="text" id="ed-en" placeholder="Термин" maxlength="80" />
+      <input type="text" id="ed-desc" placeholder="Описание" maxlength="500" />
+      <button class="primary-btn" id="ed-add">Добавить</button>
+    </div>
+
+    <div id="editor-list"></div>
+
+    <div class="editor-actions">
+      <button class="outline-btn" id="ed-export">⬇ Экспорт JSON</button>
+      <button class="outline-btn" id="ed-import">⬆ Импорт JSON</button>
+      <button class="outline-btn" id="ed-reset">↺ Сбросить к исходным</button>
+      <button class="primary-btn" id="ed-close">Готово</button>
+    </div>
+    <input type="file" id="ed-file" accept=".json,application/json" hidden />
+  </div>
+</div>
+
+<!-- ===================== ТОСТЫ ===================== -->
+<div id="toast-wrap"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ============================================================
+  // ВОПРОСЫ
+  //
+  // Общие вопросы вынесены в COMMON_QUESTIONS — они входят
+  // в оба набора, чтобы не дублировать их в двух местах.
+  //
+  // Формат каждой карточки:
+  // { en: "Термин", ru: "Перевод", desc: "Описание" },
+  // ============================================================
+
+  // --- Общие вопросы (есть в обоих наборах) ---
+  const COMMON_QUESTIONS = [
+    { en: "Take control", ru: "Take control", desc: "Переводит в режим ручного управления." },
+    { en: "Important", ru: "Important", desc: "Пометка Important обозначает нахождение робота в опасном месте. Необходимо быстро обеспечить безопасность робота, следуя регламенту." },
+    { en: "Blockage", ru: "Blockage", desc: "Полигон, который устанавливается на полосы робота и запрещает планеру прокладывать маршрут через данную область." },
+    { en: "Static", ru: "Static", desc: "Полигон статики создаёт виртуальное препятствие по контуру нарисованного полигона (например, чтобы объехать сугроб или яму)." },
+    { en: "Stuck Common", ru: "Stuck Common", desc: "Робот должен двигаться к конечной точке, но по какой-то причине этого не делает." },
+    { en: "Stuck For a long time", ru: "Stuck For a long time", desc: "Робот стоит застрявшим более 4 минут." },
+    { en: "Child has disappeared", ru: "Child has disappeared", desc: "Рядом с роботом находится ребёнок, который попал в «слепую» зону датчиков." },
+    { en: "Take rover control for stuck resolving", ru: "Take rover control for stuck resolving", desc: "Робот застрял. В последние секунды движения слишком близко подъехал к объекту (статике). Возможно ложная статика." },
+    { en: "Can't build path, take rover control", ru: "Can't build path, take rover control", desc: "Есть маршрут, но робот не может построить траекторию движения." },
+    { en: "Parktronics stop engaged", ru: "Parktronics stop engaged", desc: "Препятствие чересчур близко к роботу, сработали парктроники." },
+    { en: "Incorrect status", ru: "Incorrect status", desc: "У робота некорректный статус заказа." },
+    { en: "False", ru: "False", desc: "Помечает реквест как ошибочно сформированный и закрывает его." },
+    { en: "Heading to", ru: "Heading to", desc: "После закрытия крышки робот строит маршрут к клиенту." }
+  ];
+
+  // --- Только для игры "Resolver" ---
+  const RESOLVER_ONLY = [
+    { en: "Navigate to", ru: "Navigate to", desc: "Построить роботу маршрут вручную" },
+    { en: "Open in Panoramas", ru: "Open in Panoramas", desc: "Открывает список перехода на панорамы SDC, Yandex и Google." },
+    { en: "GEOTIFF", ru: "GEOTIFF", desc: "Выбор отображаемого слоя в карте геотиффов (None — отключает слой; Intensity — с шумами; Density — без шумов)." },
+    { en: "Time Machine", ru: "Time Machine", desc: "Позволяет понять, что было с роботом в конкретный промежуток времени с точностью до секунды." },
+    { en: "Enable Follow Rover", ru: "Enable Follow Rover", desc: "Функция центрирования робота по центру карты." },
+    { en: "Accept", ru: "Accept", desc: "принимает назначенный реквест." },
+    { en: "Return Auto", ru: "Return Auto", desc: "нажатие возвращает в автоматический режим." },
+    { en: "Parking", ru: "Parking", desc: "кнопка плавной остановки робота. При нажатии на эту кнопку движущийся робот начинает плавно останавливаться в доступном месте." },
+    { en: "Restart profile", ru: "Restart profile", desc: "перезапускает активный профиль робота." },
+    { en: "Dynamic homing", ru: "Dynamic homing", desc: "ручная локализация робота." },
+    { en: "Reset current limiter", ru: "Reset current limiter", desc: "кнопка сброса напряжения с колес." },
+    { en: "Send report", ru: "Send report", desc: "открывает окно создания репорта." },
+    { en: "Set manual mode", ru: "Set manual mode", desc: "переводит робота в режим Manual, в котором расслабляются колеса, и робота можно толкать." },
+    { en: "Accepted order", ru: "Accepted order", desc: "Заказ принят, строит маршрут к пункту выдачи заказа (ПВЗ)." },
+    { en: "Arrived", ru: "Arrived", desc: "Ожидает заказа у ПВЗ." },
+    { en: "Returning to", ru: "Returning to", desc: "Возвращается к ПВЗ." },
+    { en: "Type", ru: "Type", desc: "строка для выбора вида полигона." },
+    { en: "Time to live", ru: "Time to live", desc: "время жизни полигона." },
+    { en: "Traffic light", ru: "Traffic light", desc: "Робот приближается к регулируемому пешеходному переходу. Реквест отправляется резолверу, когда робот на расстоянии ~1 метра от перехода." },
+    { en: "Crosswalk", ru: "Crosswalk", desc: "Робот приближается к нерегулируемому пешеходному переходу. Реквест отправляется резолверу, когда робот на расстоянии ~1 метра от перехода." },
+    { en: "Stuck Traffic Lights", ru: "Stuck Traffic Lights", desc: "Робот стоит на светофоре и за последние 2 минуты видел зелёный меньше 10 секунд." },
+    { en: "Rover cant move", ru: "Rover cant move", desc: "Робот не может двигаться в течение 5 секунд из-за застревания. Не может развернуться 15 секунд. Находится в радиусе 2 метров от препятствия 20 секунд. Приехал на точку, но не завершил маршрут." },
+    { en: "Routing failure", ru: "Routing failure", desc: "Робот не может построить маршрут." },
+    { en: "Robot is staled", ru: "Robot is staled", desc: "Более 30 секунд нет связи с роботом. Только у роботов с заказом или маршрутом." },
+    { en: "Incident detected", ru: "Incident detected", desc: "Сработал Incident detector. Во время выгрузки видео высвечивается критическая ошибка." },
+    { en: "Localization", ru: "Localization", desc: "процесс определения роботом своего местоположения на карте." },
+    { en: "Паника", ru: "Паника", desc: "сигнал о том, что какая-то подсистема работает некорректно и необходимо вмешательство в работу автопилота." },
+    { en: "АВС", ru: "АВС", desc: "каталог сервисов Яндекса." },
+    { en: "Баг", ru: "Баг", desc: "ошибка." },
+    { en: "Base point", ru: "Base point", desc: "точка на карте локации с атрибутом base. Место стоянки робота в ожидании заказов." },
+    { en: "ICP", ru: "ICP", desc: "показания лидарной локализации." },
+    { en: "Request", ru: "Request", desc: "запрос, требующий решения от оператора." },
+    { en: "/RoverChassis/Wheels", ru: "/RoverChassis/Wheels", desc: "крит связан с шасси." },
+    { en: "/RoverChassis/Lighting", ru: "/RoverChassis/Lighting", desc: "крит связан с элементами освещения на роботе." },
+    { en: "/RoverChassis/TechLid/BootLid:", ru: "/RoverChassis/TechLid/BootLid:", desc: "крит связан с внутренней крышкой почтового отсека." },
+    { en: "/Sensors/Lidars", ru: "/Sensors/Lidars", desc: "крит связан с лидаром." },
+    { en: "Яндексовый жучок", ru: "Яндексовый жучок", desc: "кнопка для отправки репорта о проблемах." },
+    { en: "RCC", ru: "RCC", desc: "Remote Control Cloud — набор инструментов для наблюдения и управления автономным транспортом: роботами и машинами." },
+    { en: "Approve", ru: "Approve", desc: "кнопка для разрешения проезда роботу по ПП." },
+    { en: "Shift", ru: "Shift", desc: "рабочая смена оператора. Открывается в начале дня и закрывается по завершении работы." },
+    { en: "Order", ru: "Order", desc: "заказ на доставку. Создаётся клиентом, назначается роботу и сопровождается до вручения." },
+    { en: "Charging", ru: "Charging", desc: "процесс зарядки робота. Автоматически едет на станцию при низком заряде батареи." },
+    { en: "Route", ru: "Route", desc: "маршрут движения робота от старта до точки назначения, построенный с учётом полигонов и полос." }
+  ];
+
+  // --- Только для игры "Outsource-Resolver" ---
+  const OUTSOURCE_ONLY = [
+    { en: "Remote Control Cloud", ru: "Remote Control Cloud", desc: "Набор инструментов, предназначенных для наблюдения и управления роботом-доставщиком." },
+    { en: "Done", ru: "Done", desc: "Кнопка Done закрывает реквест как выполненный. После нажатия появляется список с резолюциями." },
+    { en: "Auto", ru: "Auto", desc: "Автоматический режим робота." },
+    { en: "RCMD", ru: "RCMD", desc: "Режим удалённого управления робота." },
+    { en: "PANIK", ru: "PANIK", desc: "Критическая ошибка у робота." },
+    { en: "STALE", ru: "STALE", desc: "Потеряна связь с роботом более 30 секунд." },
+    { en: "MAN", ru: "MAN", desc: "Мануальный режим, в котором у робота расслаблены шасси." },
+    { en: "PNR", ru: "PNR", desc: "Загрузка профиля роботу." },
+    { en: "ЭПР", ru: "ЭПР", desc: "Экспериментальный правовой режим." },
+    { en: "Danger", ru: "Danger", desc: "Полигон. Робот останавливается на границе полигона и отправляет оператору запрос, чтобы оператор, убедившись в безопасности, разрешил продолжить движение роботу в автоматическом режиме с помощью кнопки Approve. Работает в границах полигона. (Отправляем резолверу.)" },
+    { en: "Speedlimit", ru: "Speedlimit", desc: "Полигон ограничивает максимальную скорость в месте установки полигона до указанного значения (км/ч) или чтобы обозначить что-то в карте." },
+    { en: "[EXP]", ru: "[EXP]", desc: "Полигоны с истекшим TTL (time to live — время жизни полигона) не удаляются, а переделываются в Danger-полигон и имеют префикс [EXP] в названии." },
+    { en: "TTL", ru: "TTL", desc: "TTL (time to live — время жизни полигона)." },
+    { en: "No advance on route", ru: "No advance on route", desc: "Робот слишком долго не двигается по маршруту, но не может квалифицировать причину." },
+    { en: "Severity Policy", ru: "Severity Policy", desc: "Разметка критичности вмешательства." },
+    { en: "Doesn't fit", ru: "Doesn't fit", desc: "Заказ не помещается в робота. (Резолюция при отправке координатору.)" },
+    { en: "Mechanical", ru: "Mechanical", desc: "Любая техническая неисправность. (Резолюция при отправке координатору.)" }
+  ];
+
+  // Итоговые встроенные наборы = общие + свои
+  const RESOLVER_QUESTIONS = [...COMMON_QUESTIONS, ...RESOLVER_ONLY];
+  const OUTSOURCE_QUESTIONS = [...COMMON_QUESTIONS, ...OUTSOURCE_ONLY];
+
+  // ============================================================
+  // ☁️ ОБЛАКО (SUPABASE)
+  //
+  // ВСТАВЬТЕ СВОИ КЛЮЧИ НИЖЕ (Supabase → Project Settings → API):
+  // ============================================================
+  const SUPABASE_URL = 'https://eeinbmzviucchfvmjcec.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_cYDLNkiH6cAfJHkqgg89mA_VRGfaSUk';
+
+  const sb = (SUPABASE_URL.includes('ВАШ_') || typeof supabase === 'undefined')
+    ? null
+    : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Кэш данных (заполняется при старте из облака или из localStorage)
+  const QUESTIONS_CACHE = { resolver: null, outsource: null };
+  let TOP_CACHE = [];
+  let GAMES_PLAYED = 0;
+  let PROFILES_CACHE = {};
+
+  function stripRow(r) { return { id: r.id, en: r.en, ru: r.ru, desc: r.desc }; }
+
+  // ===================== НАБОРЫ ВОПРОСОВ =====================
+  function getQuestionSet(game) {
+    if (QUESTIONS_CACHE[game]) return QUESTIONS_CACHE[game].map(q => ({ ...q }));
+    try {
+      const saved = JSON.parse(localStorage.getItem('ya_kart_q_' + game));
+      if (Array.isArray(saved) && saved.length > 0) return saved;
+    } catch {}
+    const base = game === 'resolver' ? RESOLVER_QUESTIONS : OUTSOURCE_QUESTIONS;
+    return base.map(q => ({ ...q }));
+  }
+
+  function saveQuestionSet(game, arr) {
+    localStorage.setItem('ya_kart_q_' + game, JSON.stringify(arr));
+    bumpQuestionsVersion(game);
+  }
+
+  // Версия набора вопросов: если вопросы изменились, старое
+  // сохранение партии недействительно (иначе карточки «съедут»).
+  function getQuestionsVersion(game) {
+    return parseInt(localStorage.getItem('ya_kart_qv_' + game) || '1', 10);
+  }
+  function bumpQuestionsVersion(game) {
+    localStorage.setItem('ya_kart_qv_' + game, String(getQuestionsVersion(game) + 1));
+  }
+
+  // ===================== ЗАГРУЗКА ИЗ ОБЛАКА =====================
+  async function cloudInit() {
+    // Вопросы
+    let { data: qs, error } = await sb.from('questions').select('*').order('id');
+    if (error) throw error;
+    if (!qs.length) {
+      // Первый запуск — заливаем встроенные наборы в облако
+      const seed = [
+        ...RESOLVER_QUESTIONS.map(q => ({ game: 'resolver', en: q.en, ru: q.ru, desc: q.desc })),
+        ...OUTSOURCE_QUESTIONS.map(q => ({ game: 'outsource', en: q.en, ru: q.ru, desc: q.desc }))
+      ];
+      const { error: insErr } = await sb.from('questions').insert(seed);
+      if (insErr) throw insErr;
+      ({ data: qs } = await sb.from('questions').select('*').order('id'));
+    }
+    QUESTIONS_CACHE.resolver = qs.filter(q => q.game === 'resolver').map(stripRow);
+    QUESTIONS_CACHE.outsource = qs.filter(q => q.game === 'outsource').map(stripRow);
+
+    // Топ игроков
+    const { data: top } = await sb.from('top_players').select('name,score').order('score', { ascending: false }).limit(10);
+    TOP_CACHE = top || [];
+
+    // Счётчик игр
+    const { data: st } = await sb.from('stats').select('games_played').eq('id', 1).maybeSingle();
+    GAMES_PLAYED = st ? st.games_played : 0;
+
+    // Профили
+    const { data: profs } = await sb.from('profiles').select('*');
+    (profs || []).forEach(p => { PROFILES_CACHE[p.name] = p; });
+
+    subscribeRealtime();
+  }
+
+  // ===================== REALTIME-ПОДПИСКИ =====================
+  function subscribeRealtime() {
+    sb.channel('ya-kartochki-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, payload => {
+        applyQuestionChange(payload);
+        bumpQuestionsVersion('resolver');
+        bumpQuestionsVersion('outsource');
+        if (typeof editorOverlay !== 'undefined' && editorOverlay.classList.contains('active')) {
+          editorQuestions = getQuestionSet(currentGame);
+          renderEditor();
+        }
+        showToast('☁️', 'Вопросы обновлены', 'Кто-то изменил набор карточек');
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'top_players' }, () => {
+        refreshTop();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stats' }, payload => {
+        if (payload.new && typeof payload.new.games_played === 'number') {
+          GAMES_PLAYED = payload.new.games_played;
+          renderStats();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, payload => {
+        if (payload.new && payload.new.name) PROFILES_CACHE[payload.new.name] = payload.new;
+      })
+      .subscribe();
+  }
+
+  function applyQuestionChange(payload) {
+    const { eventType, new: n, old: o } = payload;
+    if (eventType === 'INSERT' && n) {
+      const c = QUESTIONS_CACHE[n.game];
+      if (c && !c.some(q => q.id === n.id)) c.push(stripRow(n));
+    } else if (eventType === 'UPDATE' && n) {
+      const c = QUESTIONS_CACHE[n.game];
+      if (c) { const i = c.findIndex(q => q.id === n.id); if (i >= 0) c[i] = stripRow(n); }
+    } else if (eventType === 'DELETE' && o) {
+      ['resolver', 'outsource'].forEach(g => {
+        const c = QUESTIONS_CACHE[g];
+        if (c) { const i = c.findIndex(q => q.id === o.id); if (i >= 0) c.splice(i, 1); }
+      });
+    }
+  }
+
+  // ===================== ОБЛАЧНЫЕ ОПЕРАЦИИ: ВОПРОСЫ =====================
+  async function cloudAddQuestion(game, q) {
+    const { data, error } = await sb.from('questions')
+      .insert({ game, en: q.en, ru: q.ru, desc: q.desc }).select().single();
+    if (error) throw error;
+    const row = stripRow(data);
+    const c = QUESTIONS_CACHE[game];
+    if (c && !c.some(x => x.id === row.id)) c.push(row);
+    return row;
+  }
+
+  async function cloudUpdateQuestion(game, id, q) {
+    const { error } = await sb.from('questions')
+      .update({ en: q.en, ru: q.ru, desc: q.desc }).eq('id', id);
+    if (error) throw error;
+    const c = QUESTIONS_CACHE[game];
+    if (c) { const i = c.findIndex(x => x.id === id); if (i >= 0) c[i] = { id, ...q }; }
+  }
+
+  async function cloudDeleteQuestion(game, id) {
+    const { error } = await sb.from('questions').delete().eq('id', id);
+    if (error) throw error;
+    const c = QUESTIONS_CACHE[game];
+    if (c) { const i = c.findIndex(x => x.id === id); if (i >= 0) c.splice(i, 1); }
+  }
+
+  async function cloudReplaceQuestions(game, arr) {
+    const { error: delErr } = await sb.from('questions').delete().eq('game', game);
+    if (delErr) throw delErr;
+    const rows = arr.map(q => ({ game, en: q.en, ru: q.ru, desc: q.desc }));
+    const { data, error: insErr } = await sb.from('questions').insert(rows).select().order('id');
+    if (insErr) throw insErr;
+    QUESTIONS_CACHE[game] = (data || []).map(stripRow);
+  }
+
+  // ===================== ОБЛАЧНЫЕ ОПЕРАЦИИ: ТОП / СТАТИСТИКА / ПРОФИЛИ =====================
+  async function refreshTop() {
+    if (!sb) return;
+    const { data } = await sb.from('top_players').select('name,score').order('score', { ascending: false }).limit(10);
+    TOP_CACHE = data || [];
+    renderTop();
+  }
+
+  async function cloudAddTop(playersArr) {
+    const rows = playersArr.map(p => ({ name: p.name, score: p.score }));
+    const { error } = await sb.from('top_players').insert(rows);
+    if (error) throw error;
+    await refreshTop();
+  }
+
+  async function cloudIncGames() {
+    const { data, error } = await sb.rpc('increment_games_played');
+    if (!error && typeof data === 'number') {
+      GAMES_PLAYED = data;
+    } else {
+      // запасной вариант без RPC
+      const { data: st } = await sb.from('stats').select('games_played').eq('id', 1).maybeSingle();
+      const v = (st ? st.games_played : 0) + 1;
+      await sb.from('stats').upsert({ id: 1, games_played: v });
+      GAMES_PLAYED = v;
+    }
+    renderStats();
+  }
+
+  async function cloudUpsertProfile(name, pr) {
+    const { error } = await sb.from('profiles').upsert({
+      name, games: pr.games, correct: pr.correct, wrong: pr.wrong, best: pr.best, ach: pr.ach
+    });
+    if (error) console.warn('profiles upsert:', error);
+  }
+
+  // Активный набор вопросов (меняется при выборе игры)
+  let currentGame = 'resolver';
+  let words = getQuestionSet(currentGame);
+
+  // ===================== ТЁМНАЯ ТЕМА =====================
+  const themeToggle = document.getElementById('theme-toggle');
+
+  function setTheme(theme) {
+    document.body.classList.toggle('dark-theme', theme === 'dark');
+    themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    localStorage.setItem('ya_kart_theme', theme);
+  }
+
+  setTheme(localStorage.getItem('ya_kart_theme') || 'light');
+
+  themeToggle.addEventListener('click', () => {
+    setTheme(document.body.classList.contains('dark-theme') ? 'light' : 'dark');
+  });
+
+  // ===================== УТИЛИТЫ =====================
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[m]);
+  }
+
+  function shuffleArray(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ===================== НАСТРОЙКИ =====================
+  const DEFAULT_SETTINGS = { timer: 60, penalty: false, bonus: false, reverse: false, sound: true };
+
+  function getSettings() {
+    try { return { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem('ya_kart_settings')) || {}) }; }
+    catch { return { ...DEFAULT_SETTINGS }; }
+  }
+  function saveSettings() { localStorage.setItem('ya_kart_settings', JSON.stringify(settings)); }
+
+  const settings = getSettings();
+
+  const setTimerEl = document.getElementById('set-timer');
+  const setPenaltyEl = document.getElementById('set-penalty');
+  const setBonusEl = document.getElementById('set-bonus');
+  const setReverseEl = document.getElementById('set-reverse');
+  const setSoundEl = document.getElementById('set-sound');
+
+  setTimerEl.value = String(settings.timer);
+  setPenaltyEl.checked = settings.penalty;
+  setBonusEl.checked = settings.bonus;
+  setReverseEl.checked = settings.reverse;
+  setSoundEl.checked = settings.sound;
+
+  setTimerEl.addEventListener('change', () => { settings.timer = parseInt(setTimerEl.value, 10); saveSettings(); });
+  setPenaltyEl.addEventListener('change', () => { settings.penalty = setPenaltyEl.checked; saveSettings(); });
+  setBonusEl.addEventListener('change', () => { settings.bonus = setBonusEl.checked; saveSettings(); });
+  setReverseEl.addEventListener('change', () => { settings.reverse = setReverseEl.checked; saveSettings(); });
+  setSoundEl.addEventListener('change', () => { settings.sound = setSoundEl.checked; saveSettings(); });
+
+  // ===================== ЗВУКИ (WebAudio, без файлов) =====================
+  let audioCtx = null;
+  function beep(freq, dur, type, vol, when) {
+    if (!settings.sound) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audioCtx.currentTime + (when || 0);
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(vol || 0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + dur);
+    } catch {}
+  }
+  const sndCorrect = () => { beep(660, 0.12); beep(880, 0.2, 'sine', 0.12, 0.1); };
+  const sndWrong = () => beep(170, 0.3, 'sawtooth', 0.1);
+  const sndTick = () => beep(1050, 0.05, 'square', 0.045);
+  const sndTimeout = () => { beep(300, 0.15, 'square', 0.1); beep(190, 0.3, 'square', 0.1, 0.16); };
+  const sndWin = () => { [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.22, 'sine', 0.13, i * 0.16)); };
+  const sndAch = () => { beep(784, 0.12, 'triangle', 0.12); beep(1175, 0.25, 'triangle', 0.12, 0.12); };
+
+  // ===================== ДОСТИЖЕНИЯ И ПРОФИЛИ =====================
+  const ACHIEVEMENTS = {
+    streak5:  { icon: '🔥', name: 'Горячая серия', desc: '5 правильных ответов подряд' },
+    streak10: { icon: '💥', name: 'Непробиваемый', desc: '10 правильных ответов подряд' },
+    sharp:    { icon: '🎯', name: 'Снайпер', desc: 'Игра без единой ошибки (5+ ответов)' },
+    veteran:  { icon: '🏁', name: 'Ветеран', desc: '5 сыгранных до конца игр' }
+  };
+
+  function getProfiles() {
+    if (sb) return PROFILES_CACHE;
+    try { return JSON.parse(localStorage.getItem('ya_kart_profiles')) || {}; }
+    catch { return {}; }
+  }
+  function saveProfiles(p) {
+    if (sb) PROFILES_CACHE = p; // в облако пишется через cloudUpsertProfile
+    try { localStorage.setItem('ya_kart_profiles', JSON.stringify(p)); } catch {} // локальный бэкап всегда
+  }
+
+  function showToast(icon, title, desc) {
+    const wrap = document.getElementById('toast-wrap');
+    const el = document.createElement('div');
+    el.className = 'ach-toast';
+    el.innerHTML = `
+      <span class="ach-icon">${icon}</span>
+      <span>
+        <div class="ach-name">${escapeHtml(title)}</div>
+        <div class="ach-desc">${escapeHtml(desc)}</div>
+      </span>`;
+    wrap.appendChild(el);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, 3500);
+  }
+
+  function unlockAch(playerName, achId) {
+    const profiles = getProfiles();
+    const pr = profiles[playerName] || (profiles[playerName] = { games: 0, correct: 0, wrong: 0, best: 0, ach: [] });
+    if (pr.ach.includes(achId)) return;
+    pr.ach.push(achId);
+    saveProfiles(profiles);
+    if (sb) cloudUpsertProfile(playerName, pr);
+    const a = ACHIEVEMENTS[achId];
+    sndAch();
+    showToast(a.icon, `Достижение: ${a.name}`, `${playerName} — ${a.desc}`);
+  }
+
+  // ===================== СОСТОЯНИЕ =====================
+  const players = [];
+  let currentPlayerIndex = 0;
+  let activeCard = null;
+  let modalOpen = false;
+  let answeredCount = 0;
+  let turnTimer = null;
+  let turnTimeLeft = 60;
+  let currentCols = 8;
+  let cardsElements = [];
+  let missedQuestions = [];   // вопросы, на которых ошиблись (для повтора)
+  let reviewMode = false;     // раунд повторения ошибок
+
+  // ===================== СОХРАНЕНИЕ ИГРЫ =====================
+  const GAME_STATE_KEY = 'ya_kart_game_state';
+
+  function saveGameState() {
+    if (!document.body.classList.contains('game-active')) return;
+    const state = {
+      active: true,
+      game: currentGame,
+      qv: getQuestionsVersion(currentGame),
+      reviewMode,
+      players: players.map(p => ({ name: p.name, score: p.score, correct: p.correct, wrong: p.wrong, streak: p.streak })),
+      currentPlayerIndex,
+      answeredCount,
+      cards: cardsElements.map(c => ({
+        index: parseInt(c.dataset.index, 10),
+        answered: c.classList.contains('answered')
+      }))
+    };
+    localStorage.setItem(GAME_STATE_KEY, JSON.stringify(state));
+  }
+
+  function loadGameState() {
+    try { return JSON.parse(localStorage.getItem(GAME_STATE_KEY)); }
+    catch { return null; }
+  }
+
+  function clearGameState() {
+    localStorage.removeItem(GAME_STATE_KEY);
+  }
+
+  const savedState = loadGameState();
+
+  // ===================== LOCALSTORAGE: СТАТИСТИКА И ТОП =====================
+  function getStats() {
+    try { return JSON.parse(localStorage.getItem('ya_kart_stats')) || { gamesPlayed: 0 }; }
+    catch { return { gamesPlayed: 0 }; }
+  }
+  function saveStats(s) { localStorage.setItem('ya_kart_stats', JSON.stringify(s)); }
+
+  function getTop() {
+    try { return JSON.parse(localStorage.getItem('ya_kart_top')) || []; }
+    catch { return []; }
+  }
+  function saveTop(t) { localStorage.setItem('ya_kart_top', JSON.stringify(t)); }
+
+  function renderStats() {
+    document.getElementById('games-played').textContent = GAMES_PLAYED;
+  }
+
+  function renderTop() {
+    const t = TOP_CACHE;
+    const profiles = getProfiles();
+    const wrap = document.getElementById('top-players');
+    if (t.length === 0) {
+      wrap.innerHTML = '<div class="empty-hint">Пока нет результатов</div>';
+      return;
+    }
+    const medals = ['🥇', '🥈', '🥉'];
+    wrap.innerHTML = t.slice(0, 5).map((p, i) => {
+      const pr = profiles[p.name];
+      const total = pr ? (pr.correct + pr.wrong) : 0;
+      const acc = total > 0 ? `<span class="top-acc">${Math.round(pr.correct / total * 100)}%</span>` : '';
+      return `
+      <div class="top-item">
+        <span class="top-name">${medals[i] || '•'} ${escapeHtml(p.name)}</span>
+        <span class="top-score">${p.score}${acc}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ===================== ЭКРАНЫ =====================
+  const selectScreen = document.getElementById('select-screen');
+  const startScreen = document.getElementById('start-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const startBtn = document.getElementById('start-btn');
+  const nameInputsWrap = document.getElementById('name-inputs');
+  const addPlayerBtn = document.getElementById('add-player');
+
+  // ===================== ВЫБОР ИГРЫ =====================
+  const backToSelectBtn = document.getElementById('back-to-select');
+
+  document.querySelectorAll('.game-select-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentGame = btn.dataset.game;
+      words = getQuestionSet(currentGame);
+
+      document.getElementById('game-mode-badge').textContent =
+        currentGame === 'resolver' ? 'Resolver' : 'Outsource-Resolver';
+
+      selectScreen.style.display = 'none';
+      startScreen.style.display = 'flex';
+      backToSelectBtn.style.display = '';
+    });
+  });
+
+  backToSelectBtn.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    selectScreen.style.display = 'flex';
+    backToSelectBtn.style.display = 'none';
+  });
+
+  // ===================== ИГРОКИ =====================
+  let playerCount = 0;
+
+  function addNameInput() {
+    if (playerCount >= 10) return;
+    playerCount++;
+    const row = document.createElement('div');
+    row.className = 'name-row';
+    row.innerHTML = `
+      <input type="text" class="name-input" maxlength="20" placeholder="Имя игрока ${playerCount}" />
+      <button class="remove-player" title="Удалить">✕</button>
+    `;
+    row.querySelector('.remove-player').addEventListener('click', () => {
+      if (playerCount <= 1) return;
+      row.remove();
+      playerCount--;
+      updateRemoveButtons();
+    });
+    nameInputsWrap.appendChild(row);
+    updateRemoveButtons();
+  }
+
+  function updateRemoveButtons() {
+    const rows = nameInputsWrap.querySelectorAll('.name-row');
+    rows.forEach(r => {
+      r.querySelector('.remove-player').style.display = rows.length <= 1 ? 'none' : '';
+    });
+  }
+
+  addPlayerBtn.addEventListener('click', addNameInput);
+  addNameInput();
+
+  // ===================== ТЕКСТ КАРТОЧКИ (прямой/обратный режим) =====================
+  // front — то, что видно сразу (термин).
+  // back — ответ, который открывается кнопкой «Показать описание».
+  function cardFaceText(item) {
+    if (settings.reverse) return { front: item.desc || item.en, back: item.en };
+    return { front: item.en, back: item.desc || item.ru };
+  }
+
+  // ===================== СОЗДАНИЕ КАРТОЧЕК (без лимита!) =====================
+  const container = document.getElementById('game-container');
+  const overlay = document.getElementById('modal-overlay');
+  const modalFront = document.getElementById('modal-front');
+  const modalBack = document.getElementById('modal-back');
+  const closeBtn = document.getElementById('close-btn');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+
+  const RU_LETTERS = ['А','Б','В','Г','Д','Е','Ж','З'];
+
+  function buildCards(count) {
+    container.innerHTML = '';
+    cardsElements = [];
+    for (let index = 0; index < count; index++) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.index = index;
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="face front"></div>
+          <div class="face back"></div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        if (modalOpen) return;
+        if (card.classList.contains('answered')) return;
+        const wIdx = parseInt(card.dataset.index, 10);
+        if (wIdx >= words.length) return;
+
+        activeCard = card;
+        const w = words[wIdx];
+        const face = cardFaceText(w);
+
+        // Координата карточки на сетке (например, «Б-4»)
+        const pos = cardsElements.indexOf(card);
+        const col = pos % currentCols;
+        const row = Math.floor(pos / currentCols);
+        document.getElementById('modal-coord').textContent = `${RU_LETTERS[col]}-${row + 1}`;
+
+        // Модалка БЕЗ переворота: сразу виден только вопрос (термин,
+        // в режиме «наоборот» — описание). Ответ скрыт и открывается
+        // только по кнопке «Показать описание».
+        const answerLabel = settings.reverse ? '👁 Показать термин' : '👁 Показать описание';
+        modalFront.innerHTML = `
+          <div class="modal-question">${escapeHtml(face.front)}</div>
+          <div class="description" id="modal-desc">${escapeHtml(face.back)}</div>
+          <div class="modal-actions">
+            <button class="modal-btn modal-show" id="btn-show">${answerLabel}</button>
+            <button class="modal-btn modal-show" id="btn-skip">⏭ Пас</button>
+            <button class="modal-btn modal-wrong" id="btn-wrong">✗ Не правильно</button>
+            <button class="modal-btn modal-right" id="btn-right">✓ Правильно</button>
+          </div>
+        `;
+        modalBack.innerHTML = '';
+
+        document.getElementById('btn-show').addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById('modal-desc').classList.add('visible');
+          e.currentTarget.disabled = true;
+        });
+        document.getElementById('btn-skip').addEventListener('click', (e) => {
+          e.stopPropagation(); handleSkip();
+        });
+        document.getElementById('btn-wrong').addEventListener('click', (e) => {
+          e.stopPropagation(); handleWrong();
+        });
+        document.getElementById('btn-right').addEventListener('click', (e) => {
+          e.stopPropagation(); handleCorrect();
+        });
+
+        // Карточка на поле НЕ переворачивается — просто «подлетает» к экрану
+        const modalCard = document.getElementById('modal-card');
+        modalCard.classList.remove('flipped');
+        overlay.classList.add('active');
+        modalOpen = true;
+        startTurnTimer();
+      });
+
+      container.appendChild(card);
+      cardsElements.push(card);
+    }
+  }
+
+  // ===================== СТАРТ / ПЕРЕЗАПУСК РАУНДА =====================
+  function dealCards() {
+    const indices = Array.from({ length: words.length }, (_, i) => i);
+    shuffleArray(indices);
+    setGridForCount(words.length);
+    buildCards(words.length);
+    cardsElements.forEach((card, i) => {
+      const idx = indices[i];
+      const item = words[idx];
+      const face = cardFaceText(item);
+      card.dataset.index = idx;
+      card.querySelector('.front').textContent = face.front;
+      card.querySelector('.back').textContent = face.back;
+    });
+  }
+
+  function beginGame() {
+    answeredCount = 0;
+    missedQuestions = [];
+    reviewMode = false;
+    dealCards();
+    renderScoreChips();
+    updateProgress();
+
+    document.getElementById('finish-screen').classList.remove('active');
+    startScreen.style.display = 'none';
+    selectScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    document.body.classList.add('game-active');
+    backToSelectBtn.style.display = 'none';
+    saveGameState();
+  }
+
+  // ===================== СТАРТ ИГРЫ (КНОПКА) =====================
+  startBtn.addEventListener('click', () => {
+    const inputs = nameInputsWrap.querySelectorAll('.name-input');
+    players.length = 0;
+    const usedNames = {};
+    inputs.forEach((input, i) => {
+      let name = input.value.trim() || `Игрок ${i + 1}`;
+      if (usedNames[name]) {
+        usedNames[name]++;
+        name = `${name} (${usedNames[name]})`;
+      } else {
+        usedNames[name] = 1;
+      }
+      players.push({ name, score: 0, correct: 0, wrong: 0, streak: 0 });
+    });
+    currentPlayerIndex = 0;
+    beginGame();
+  });
+
+  // ===================== ПОДСТРОЙКА СЕТКИ ПОД ЧИСЛО ВОПРОСОВ =====================
+  function setGridForCount(count) {
+    const grid = document.getElementById('game-container');
+    let cols;
+    if (count <= 4)       cols = 2;
+    else if (count <= 9)  cols = 3;
+    else if (count <= 16) cols = 4;
+    else if (count <= 25) cols = 5;
+    else if (count <= 36) cols = 6;
+    else if (count <= 49) cols = 7;
+    else                  cols = 8;
+    const rows = Math.ceil(count / cols);
+    currentCols = cols;
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+    // ===== Буквы сверху (А, Б, В, Г...) по столбцам =====
+    const colWrap = document.getElementById('col-labels');
+    colWrap.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    let colHtml = '';
+    for (let i = 0; i < cols; i++) {
+      colHtml += `<div class="grid-label col-letter">${RU_LETTERS[i]}</div>`;
+    }
+    colWrap.innerHTML = colHtml;
+
+    // ===== Цифры слева (1, 2, 3...) по строкам =====
+    const rowWrap = document.getElementById('row-labels');
+    rowWrap.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    let rowHtml = '';
+    for (let i = 0; i < rows; i++) {
+      rowHtml += `<div class="grid-label row-number">${i + 1}</div>`;
+    }
+    rowWrap.innerHTML = rowHtml;
+  }
+
+  // ===================== ЧИПЫ ИГРОКОВ =====================
+  const scoreChips = document.getElementById('score-chips');
+
+  function updateProgress() {
+    const total = words.length;
+    const fill = document.getElementById('progress-fill');
+    const label = document.getElementById('progress-label');
+    if (!fill) return;
+    const pct = total ? (answeredCount / total) * 100 : 0;
+    fill.style.width = pct + '%';
+    label.textContent = `${answeredCount} / ${total}`;
+  }
+
+  function animateScoreGain(playerIndex, text, negative) {
+    const chip = scoreChips.children[playerIndex];
+    if (!chip) return;
+    const rect = chip.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'score-pop' + (negative ? ' negative' : '');
+    el.textContent = text;
+    el.style.left = (rect.left + rect.width / 2) + 'px';
+    el.style.top = rect.top + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  function renderScoreChips() {
+    scoreChips.innerHTML = '';
+    players.forEach((p, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'score-chip' + (i === currentPlayerIndex ? ' active' : '');
+      chip.innerHTML = `
+        <span class="chip-name">${escapeHtml(p.name)}:</span>
+        <span class="chip-score">${p.score}</span>
+        ${p.streak >= 3 ? `<span class="chip-streak">🔥×${p.streak}</span>` : ''}
+      `;
+      scoreChips.appendChild(chip);
+    });
+    // Баннер «Ходит: ...»
+    const banner = document.getElementById('turn-banner');
+    if (players.length) {
+      banner.innerHTML = `Ходит: <b>${escapeHtml(players[currentPlayerIndex].name)}</b>`;
+    }
+  }
+
+  // ===================== ЗАКРЫТИЕ МОДАЛКИ =====================
+  function closeModal() {
+    stopTurnTimer();
+    overlay.classList.remove('active');
+    document.getElementById('modal-card').classList.remove('flipped');
+    modalOpen = false;
+  }
+
+  // Нейтральная отмена: карточка закрывается, ход НЕ переходит, штрафа нет
+  function handleCancel() {
+    if (!activeCard) return;
+    activeCard.classList.remove('flipped');
+    closeModal();
+    activeCard = null;
+  }
+
+  // ===================== ОБРАБОТКА ОТВЕТОВ =====================
+  function handleCorrect() {
+    if (!activeCard) return;
+    const card = activeCard;
+    const p = players[currentPlayerIndex];
+
+    card.classList.add('answered');
+    answeredCount++;
+
+    let gain = 100;
+    if (settings.bonus && settings.timer > 0 && turnTimeLeft >= Math.ceil(settings.timer / 2)) {
+      gain += 50; // бонус за скорость
+    }
+    p.score += gain;
+    p.correct++;
+    p.streak++;
+
+    // Достижения за серию
+    if (p.streak === 5) unlockAch(p.name, 'streak5');
+    if (p.streak === 10) unlockAch(p.name, 'streak10');
+
+    animateScoreGain(currentPlayerIndex, '+' + gain);
+    sndCorrect();
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+
+    closeModal();
+    renderScoreChips();
+    updateProgress();
+    activeCard = null;
+
+    if (answeredCount === words.length) {
+      finishGame();
+    } else {
+      saveGameState();
+    }
+  }
+
+  function registerMistake() {
+    const p = players[currentPlayerIndex];
+    p.wrong++;
+    p.streak = 0;
+    const wIdx = parseInt(activeCard.dataset.index, 10);
+    if (words[wIdx] && !missedQuestions.includes(words[wIdx])) {
+      missedQuestions.push(words[wIdx]);
+    }
+    if (settings.penalty) {
+      p.score = Math.max(0, p.score - 50);
+      animateScoreGain(currentPlayerIndex, '−50', true);
+    }
+  }
+
+  function handleWrong() {
+    if (!activeCard) return;
+    const card = activeCard;
+
+    registerMistake();
+    sndWrong();
+
+    card.classList.remove('flipped');
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+
+    closeModal();
+    renderScoreChips();
+    activeCard = null;
+    saveGameState();
+  }
+
+  function handleSkip() {
+    if (!activeCard) return;
+    const card = activeCard;
+    card.classList.remove('flipped');
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    closeModal();
+    renderScoreChips();
+    activeCard = null;
+    saveGameState();
+  }
+
+  // ===================== ТАЙМЕР =====================
+  function updateTimerDisplay() {
+    const el = document.getElementById('modal-timer');
+    if (!el) return;
+    el.textContent = `⏱ ${turnTimeLeft}`;
+    el.classList.toggle('warning', turnTimeLeft <= 10);
+  }
+
+  function stopTurnTimer() {
+    if (turnTimer) {
+      clearInterval(turnTimer);
+      turnTimer = null;
+    }
+  }
+
+  function startTurnTimer() {
+    stopTurnTimer();
+    const timerEl = document.getElementById('modal-timer');
+    if (settings.timer === 0) {
+      timerEl.style.display = 'none';
+      return; // таймер выключен
+    }
+    timerEl.style.display = '';
+    turnTimeLeft = settings.timer;
+    updateTimerDisplay();
+    turnTimer = setInterval(() => {
+      turnTimeLeft--;
+      updateTimerDisplay();
+      if (turnTimeLeft <= 10 && turnTimeLeft > 0) sndTick();
+      if (turnTimeLeft <= 0) {
+        stopTurnTimer();
+        handleTimeout();
+      }
+    }, 1000);
+  }
+
+  function handleTimeout() {
+    if (!activeCard) return;
+    const card = activeCard;
+    registerMistake();
+    sndTimeout();
+    card.classList.remove('flipped');
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    closeModal();
+    renderScoreChips();
+    activeCard = null;
+    saveGameState();
+  }
+
+  // ===================== ФИНАЛ ИГРЫ =====================
+  let lastPlayerNames = [];
+  let lastMissed = [];
+
+  function finishGame() {
+    clearGameState();
+    sndWin();
+
+    lastPlayerNames = players.map(p => p.name);
+    lastMissed = missedQuestions.slice();
+
+    // Счётчик завершённых игр (считаем именно доигранные партии)
+    if (sb) {
+      cloudIncGames();
+    } else {
+      const s = getStats();
+      s.gamesPlayed += 1;
+      saveStats(s);
+      GAMES_PLAYED = s.gamesPlayed;
+      renderStats();
+    }
+
+    // Обновляем профили игроков (точность, лучший результат, достижения)
+    const profiles = getProfiles();
+    players.forEach(p => {
+      const pr = profiles[p.name] || (profiles[p.name] = { games: 0, correct: 0, wrong: 0, best: 0, ach: [] });
+      pr.games += 1;
+      pr.correct += p.correct;
+      pr.wrong += p.wrong;
+      pr.best = Math.max(pr.best, p.score);
+    });
+    saveProfiles(profiles);
+    if (sb) players.forEach(p => cloudUpsertProfile(p.name, profiles[p.name]));
+    players.forEach(p => {
+      if (p.wrong === 0 && p.correct >= 5) unlockAch(p.name, 'sharp');
+      if (getProfiles()[p.name].games >= 5) unlockAch(p.name, 'veteran');
+    });
+
+    // Сохраняем результаты в топ
+    if (sb) {
+      cloudAddTop(players);
+    } else {
+      const top = getTop();
+      players.forEach(p => top.push({ name: p.name, score: p.score }));
+      top.sort((a, b) => b.score - a.score);
+      saveTop(top.slice(0, 10));
+      TOP_CACHE = getTop();
+    }
+
+    // Определяем победителя (или ничью)
+    const sorted = [...players].sort((a, b) => b.score - a.score);
+    const maxScore = sorted[0].score;
+    const winners = sorted.filter(p => p.score === maxScore);
+    const isDraw = winners.length > 1;
+
+    const subtitleEl = document.querySelector('.finish-subtitle');
+    if (isDraw) {
+      subtitleEl.textContent = 'Ничья';
+      document.getElementById('finish-winner').textContent =
+        winners.map(w => w.name).join(' и ');
+    } else {
+      subtitleEl.textContent = 'Победитель';
+      document.getElementById('finish-winner').textContent = winners[0].name;
+    }
+    document.getElementById('finish-score').textContent = maxScore;
+
+    // Рейтинг всех игроков
+    const ratingWrap = document.getElementById('finish-rating');
+    ratingWrap.innerHTML = sorted.map((p, i) => `
+      <div class="finish-rating-item${p.score === maxScore ? ' is-winner' : ''}">
+        <span class="finish-rating-name">
+          <span class="finish-rating-place">${i + 1}</span>
+          ${escapeHtml(p.name)}
+        </span>
+        <span class="finish-rating-score">${p.score}</span>
+      </div>
+    `).join('');
+
+    // Кнопка «Повторить ошибки» — только если были ошибки
+    document.getElementById('finish-review').style.display = lastMissed.length > 0 ? '' : 'none';
+
+    document.getElementById('finish-screen').classList.add('active');
+  }
+
+  // ===================== ПЕРЕМЕШИВАНИЕ =====================
+  async function shuffleCards() {
+    if (modalOpen) return;
+    if (!confirm('Перемешать карточки? Их расположение на поле изменится.')) return;
+    shuffleBtn.disabled = true;
+    shuffleBtn.textContent = '🔄 Перемешиваю...';
+
+    document.querySelectorAll('.card.flipped:not(.answered)').forEach(c => c.classList.remove('flipped'));
+
+    const activeCards = cardsElements.filter(c =>
+      !c.classList.contains('answered') &&
+      parseInt(c.dataset.index, 10) < words.length
+    );
+    const indices = activeCards.map(c => parseInt(c.dataset.index, 10));
+    shuffleArray(indices);
+
+    const duration = 400, steps = 12, stepTime = duration / steps;
+    for (let step = 0; step < steps; step++) {
+      for (const card of activeCards) {
+        const rot = (Math.random() - 0.5) * 60;
+        const tx = (Math.random() - 0.5) * 40;
+        const ty = (Math.random() - 0.5) * 40;
+        card.style.transform = `rotate(${rot}deg) translate(${tx}px, ${ty}px)`;
+      }
+      await new Promise(r => setTimeout(r, stepTime));
+    }
+
+    activeCards.forEach((card, i) => {
+      const originalIndex = indices[i];
+      const item = words[originalIndex];
+      const face = cardFaceText(item);
+      card.querySelector('.front').textContent = face.front;
+      card.querySelector('.back').textContent = face.back;
+      card.dataset.index = originalIndex;
+      card.style.transform = 'rotate(0deg) translate(0px, 0px)';
+    });
+
+    shuffleBtn.disabled = false;
+    shuffleBtn.textContent = 'Перемешать';
+    saveGameState();
+  }
+
+  shuffleBtn.addEventListener('click', shuffleCards);
+
+  // ===================== ЗАКРЫТИЕ МОДАЛКИ КЛИКОМ (нейтральная отмена) =====================
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (activeCard) handleCancel();
+  });
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay && activeCard) handleCancel();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOpen && activeCard) handleCancel();
+  });
+
+  // ===================== РЕСЕТЫ =====================
+  document.getElementById('reset-stats').addEventListener('click', async () => {
+    if (confirm('Сбросить счётчик сыгранных игр?')) {
+      if (sb) {
+        await sb.from('stats').upsert({ id: 1, games_played: 0 });
+        GAMES_PLAYED = 0;
+      } else {
+        saveStats({ gamesPlayed: 0 });
+        GAMES_PLAYED = 0;
+      }
+      renderStats();
+    }
+  });
+  document.getElementById('reset-top').addEventListener('click', async () => {
+    if (confirm('Сбросить топ игроков?')) {
+      if (sb) {
+        await sb.from('top_players').delete().neq('id', 0);
+        TOP_CACHE = [];
+      } else {
+        saveTop([]);
+        TOP_CACHE = [];
+      }
+      renderTop();
+    }
+  });
+
+  // ===================== КНОПКА В МЕНЮ =====================
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    if (confirm('Вернуться в главное меню? Текущая игра будет сброшена.')) {
+      clearGameState();
+      location.reload();
+    }
+  });
+
+  // ===================== ФИНАЛЬНЫЙ ЭКРАН — КНОПКИ =====================
+  function restartGame() {
+    if (!lastPlayerNames.length) {
+      location.reload();
+      return;
+    }
+    players.length = 0;
+    lastPlayerNames.forEach(name => players.push({ name, score: 0, correct: 0, wrong: 0, streak: 0 }));
+    currentPlayerIndex = 0;
+    words = getQuestionSet(currentGame);
+    document.getElementById('game-mode-badge').textContent =
+      currentGame === 'resolver' ? 'Resolver' : 'Outsource-Resolver';
+    beginGame();
+  }
+
+  document.getElementById('finish-again').addEventListener('click', restartGame);
+
+  // Повтор ошибок: новый раунд только из вопросов, где ошиблись
+  document.getElementById('finish-review').addEventListener('click', () => {
+    if (!lastMissed.length) return;
+    players.length = 0;
+    lastPlayerNames.forEach(name => players.push({ name, score: 0, correct: 0, wrong: 0, streak: 0 }));
+    currentPlayerIndex = 0;
+    words = lastMissed.slice();
+    reviewMode = true;
+    document.getElementById('game-mode-badge').textContent = '🔁 Повтор ошибок';
+    answeredCount = 0;
+    missedQuestions = [];
+    dealCards();
+    renderScoreChips();
+    updateProgress();
+    document.getElementById('finish-screen').classList.remove('active');
+    gameScreen.style.display = 'block';
+    document.body.classList.add('game-active');
+  });
+
+  document.getElementById('finish-menu').addEventListener('click', () => {
+    location.reload();
+  });
+
+  // ===================== РЕДАКТОР ВОПРОСОВ =====================
+  const editorOverlay = document.getElementById('editor-overlay');
+  const editorList = document.getElementById('editor-list');
+  const edEn = document.getElementById('ed-en');
+  const edDesc = document.getElementById('ed-desc');
+  const edAdd = document.getElementById('ed-add');
+  let editingIndex = -1;
+  let editorQuestions = [];
+
+  function renderEditor() {
+    document.getElementById('editor-game-name').textContent =
+      currentGame === 'resolver' ? 'Resolver' : 'Outsource-Resolver';
+    document.getElementById('editor-count').textContent = editorQuestions.length;
+    if (!editorQuestions.length) {
+      editorList.innerHTML = '<div class="empty-hint">Список пуст — добавьте первую карточку</div>';
+      return;
+    }
+    editorList.innerHTML = '';
+    editorQuestions.forEach((q, i) => {
+      const row = document.createElement('div');
+      row.className = 'editor-row';
+      row.innerHTML = `
+        <span class="er-term">${escapeHtml(q.en)}</span>
+        <span class="er-desc">${escapeHtml(q.desc || '')}</span>
+        <button class="editor-mini-btn" title="Редактировать">✏️</button>
+        <button class="editor-mini-btn danger" title="Удалить">🗑</button>
+      `;
+      const [editBtn, delBtn] = row.querySelectorAll('.editor-mini-btn');
+      editBtn.addEventListener('click', () => {
+        editingIndex = i;
+        edEn.value = q.en;
+        edDesc.value = q.desc || '';
+        edAdd.textContent = 'Сохранить';
+        edEn.focus();
+      });
+      delBtn.addEventListener('click', async () => {
+        if (confirm(`Удалить карточку «${q.en}»?`)) {
+          try {
+            if (sb && q.id) {
+              await cloudDeleteQuestion(currentGame, q.id);
+            } else {
+              editorQuestions.splice(i, 1);
+              saveQuestionSet(currentGame, editorQuestions);
+            }
+            editorQuestions = getQuestionSet(currentGame);
+            if (editingIndex === i) { editingIndex = -1; edEn.value = ''; edDesc.value = ''; edAdd.textContent = 'Добавить'; }
+            renderEditor();
+          } catch (err) {
+            alert('Не удалось удалить: ' + (err.message || err));
+          }
+        }
+      });
+      editorList.appendChild(row);
+    });
+  }
+
+  edAdd.addEventListener('click', async () => {
+    const en = edEn.value.trim();
+    const desc = edDesc.value.trim();
+    if (!en) { edEn.focus(); return; }
+    edAdd.disabled = true;
+    try {
+      if (sb) {
+        // Облачный режим: пишем сразу в базу
+        if (editingIndex >= 0) {
+          const q = editorQuestions[editingIndex];
+          if (q.id) await cloudUpdateQuestion(currentGame, q.id, { en, ru: en, desc });
+        } else {
+          await cloudAddQuestion(currentGame, { en, ru: en, desc });
+        }
+      } else {
+        // Локальный режим
+        if (editingIndex >= 0) {
+          editorQuestions[editingIndex] = { ...editorQuestions[editingIndex], en, ru: en, desc };
+        } else {
+          editorQuestions.push({ en, ru: en, desc });
+        }
+        saveQuestionSet(currentGame, editorQuestions);
+      }
+      editingIndex = -1;
+      edAdd.textContent = 'Добавить';
+      edEn.value = '';
+      edDesc.value = '';
+      editorQuestions = getQuestionSet(currentGame);
+      renderEditor();
+    } catch (err) {
+      alert('Не удалось сохранить: ' + (err.message || err));
+    } finally {
+      edAdd.disabled = false;
+    }
+  });
+
+  document.getElementById('open-editor').addEventListener('click', () => {
+    editorQuestions = getQuestionSet(currentGame);
+    editingIndex = -1;
+    edEn.value = ''; edDesc.value = '';
+    edAdd.textContent = 'Добавить';
+    renderEditor();
+    editorOverlay.classList.add('active');
+  });
+
+  function closeEditor() {
+    editorOverlay.classList.remove('active');
+    words = getQuestionSet(currentGame);
+  }
+
+  document.getElementById('ed-close').addEventListener('click', closeEditor);
+  editorOverlay.addEventListener('click', (e) => {
+    if (e.target === editorOverlay) closeEditor();
+  });
+
+  // Экспорт набора в JSON-файл
+  document.getElementById('ed-export').addEventListener('click', () => {
+    const data = JSON.stringify({ game: currentGame, questions: editorQuestions }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ya-kartochki-${currentGame}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Импорт набора из JSON-файла
+  const edFile = document.getElementById('ed-file');
+  document.getElementById('ed-import').addEventListener('click', () => edFile.click());
+  edFile.addEventListener('change', () => {
+    const file = edFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const arr = Array.isArray(data) ? data : data.questions;
+        if (!Array.isArray(arr) || !arr.length) throw new Error('empty');
+        const clean = arr
+          .filter(q => q && (q.en || q.term))
+          .map(q => ({
+            en: String(q.en || q.term).trim(),
+            ru: String(q.ru || q.en || q.term).trim(),
+            desc: String(q.desc || '').trim()
+          }));
+        if (!clean.length) throw new Error('empty');
+        if (!confirm(`Импортировать ${clean.length} карточек? Текущий набор будет заменён.`)) return;
+        if (sb) {
+          await cloudReplaceQuestions(currentGame, clean);
+        } else {
+          saveQuestionSet(currentGame, clean);
+        }
+        editorQuestions = getQuestionSet(currentGame);
+        renderEditor();
+        showToast('📥', 'Импорт завершён', `Загружено карточек: ${clean.length}`);
+      } catch {
+        alert('Не удалось прочитать файл. Нужен JSON вида:\n[{"en": "Термин", "desc": "Описание"}, ...]');
+      }
+      edFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  // Сброс набора к встроенному
+  document.getElementById('ed-reset').addEventListener('click', async () => {
+    if (!confirm('Вернуть исходный набор вопросов? Ваши правки будут удалены.')) return;
+    try {
+      if (sb) {
+        const base = currentGame === 'resolver' ? RESOLVER_QUESTIONS : OUTSOURCE_QUESTIONS;
+        await cloudReplaceQuestions(currentGame, base.map(q => ({ en: q.en, ru: q.ru, desc: q.desc })));
+      } else {
+        localStorage.removeItem('ya_kart_q_' + currentGame);
+        bumpQuestionsVersion(currentGame);
+      }
+      editorQuestions = getQuestionSet(currentGame);
+      renderEditor();
+      showToast('↺', 'Набор сброшен', 'Загружены встроенные вопросы');
+    } catch (err) {
+      alert('Не удалось сбросить: ' + (err.message || err));
+    }
+  });
+
+  // ===================== ИНИЦИАЛИЗАЦИЯ =====================
+  function getProfilesLocal() {
+    try { return JSON.parse(localStorage.getItem('ya_kart_profiles')) || {}; }
+    catch { return {}; }
+  }
+
+  async function initApp() {
+  const syncStatusEl = document.getElementById('sync-status');
+
+  if (sb) {
+    syncStatusEl.textContent = 'подключение…';
+    syncStatusEl.style.color = 'var(--text-muted)';
+    try {
+      await cloudInit();
+      syncStatusEl.textContent = 'онлайн ☁️';
+      syncStatusEl.style.color = 'var(--green)';
+      words = getQuestionSet(currentGame);
+    } catch (e) {
+      console.warn('Облако недоступно, работаем локально:', e);
+      syncStatusEl.textContent = 'офлайн (локально)';
+      syncStatusEl.style.color = 'var(--text-muted)';
+      GAMES_PLAYED = getStats().gamesPlayed;
+      TOP_CACHE = getTop();
+      PROFILES_CACHE = getProfilesLocal();
+    }
+  } else {
+    syncStatusEl.textContent = 'локально';
+    syncStatusEl.style.color = 'var(--text-muted)';
+    GAMES_PLAYED = getStats().gamesPlayed;
+    TOP_CACHE = getTop();
+    PROFILES_CACHE = getProfilesLocal();
+  }
+
+  renderStats();
+  renderTop();
+
+  // ===================== ВОССТАНОВЛЕНИЕ ПАРТИИ =====================
+  if (savedState && savedState.active && savedState.qv === getQuestionsVersion(savedState.game)) {
+    currentGame = savedState.game;
+    words = getQuestionSet(currentGame);
+    reviewMode = !!savedState.reviewMode;
+    document.getElementById('game-mode-badge').textContent = reviewMode
+      ? '🔁 Повтор ошибок'
+      : (currentGame === 'resolver' ? 'Resolver' : 'Outsource-Resolver');
+
+    buildCards(words.length);
+    setGridForCount(words.length);
+
+    cardsElements.forEach((card, i) => {
+      const saved = savedState.cards && savedState.cards[i];
+      if (saved) {
+        card.dataset.index = saved.index;
+        const item = words[saved.index] || { en: '', ru: '', desc: '' };
+        const face = cardFaceText(item);
+        card.querySelector('.front').textContent = face.front;
+        card.querySelector('.back').textContent = face.back;
+        if (saved.answered) {
+          card.classList.add('answered');
+        }
+      }
+    });
+
+    players.length = 0;
+    savedState.players.forEach(p => players.push({
+      name: p.name, score: p.score,
+      correct: p.correct || 0, wrong: p.wrong || 0, streak: p.streak || 0
+    }));
+    currentPlayerIndex = savedState.currentPlayerIndex;
+    answeredCount = savedState.answeredCount;
+
+    renderScoreChips();
+    updateProgress();
+
+    startScreen.style.display = 'none';
+    selectScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    document.body.classList.add('game-active');
+    backToSelectBtn.style.display = 'none';
+  } else {
+    // Нет сохранённой партии (или вопросы изменились) — экран выбора игры
+    if (savedState && savedState.active) clearGameState();
+    selectScreen.style.display = 'flex';
+    backToSelectBtn.style.display = 'none';
+  }
+  } // конец initApp
+
+  initApp();
+</script>
+</body>
+</html>
